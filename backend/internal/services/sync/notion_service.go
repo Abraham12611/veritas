@@ -295,11 +295,28 @@ func (s *NotionService) processPage(ctx context.Context, ds *models.DataSource, 
 
 // getPageContent retrieves and formats the content of a Notion page
 func (s *NotionService) getPageContent(ctx context.Context, pageID string) (string, error) {
-	endpoint := fmt.Sprintf("%s/blocks/%s/children", s.baseURL, pageID)
+	blocks, err := s.getBlocks(ctx, pageID)
+	if err != nil {
+		return "", err
+	}
+
+	var content strings.Builder
+	for _, block := range blocks {
+		if err := s.processBlock(&content, block, 0); err != nil {
+			return "", err
+		}
+	}
+
+	return content.String(), nil
+}
+
+// getBlocks recursively retrieves all blocks including nested ones
+func (s *NotionService) getBlocks(ctx context.Context, blockID string) ([]NotionBlock, error) {
+	endpoint := fmt.Sprintf("%s/blocks/%s/children", s.baseURL, blockID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+s.apiKey)
@@ -307,6 +324,8 @@ func (s *NotionService) getPageContent(ctx context.Context, pageID string) (stri
 
 	var response struct {
 		Results []NotionBlock `json:"results"`
+		HasMore bool          `json:"has_more"`
+		NextCursor string     `json:"next_cursor"`
 	}
 
 	err = s.withRetry(ctx, func() error {
@@ -318,24 +337,205 @@ func (s *NotionService) getPageContent(ctx context.Context, pageID string) (stri
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
-			return fmt.Errorf("failed to get page content: status %d: %s", resp.StatusCode, string(body))
+			return fmt.Errorf("failed to get blocks: status %d: %s", resp.StatusCode, string(body))
 		}
 
 		return json.NewDecoder(resp.Body).Decode(&response)
 	})
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Convert blocks to text
-	var content strings.Builder
-	for _, block := range response.Results {
-		content.WriteString(block.PlainText)
-		content.WriteString("\n\n")
+	// Process nested blocks
+	for i, block := range response.Results {
+		if block.HasChildren {
+			children, err := s.getBlocks(ctx, block.ID)
+			if err != nil {
+				return nil, err
+			}
+			response.Results[i].Children = children
+		}
 	}
 
-	return content.String(), nil
+	return response.Results, nil
+}
+
+// processBlock formats a block and its children into text
+func (s *NotionService) processBlock(sb *strings.Builder, block NotionBlock, depth int) error {
+	// Add indentation for nested blocks
+	indent := strings.Repeat("  ", depth)
+
+	switch block.Type {
+	case "paragraph":
+		if block.Paragraph != nil {
+			s.processRichText(sb, block.Paragraph.RichText)
+			sb.WriteString("\n\n")
+		}
+
+	case "heading_1":
+		if block.Heading1 != nil {
+			sb.WriteString("# ")
+			s.processRichText(sb, block.Heading1.RichText)
+			sb.WriteString("\n\n")
+		}
+
+	case "heading_2":
+		if block.Heading2 != nil {
+			sb.WriteString("## ")
+			s.processRichText(sb, block.Heading2.RichText)
+			sb.WriteString("\n\n")
+		}
+
+	case "heading_3":
+		if block.Heading3 != nil {
+			sb.WriteString("### ")
+			s.processRichText(sb, block.Heading3.RichText)
+			sb.WriteString("\n\n")
+		}
+
+	case "bulleted_list_item":
+		if block.BulletList != nil {
+			sb.WriteString(indent)
+			sb.WriteString("• ")
+			s.processRichText(sb, block.BulletList.RichText)
+			sb.WriteString("\n")
+		}
+
+	case "numbered_list_item":
+		if block.NumberList != nil {
+			sb.WriteString(indent)
+			sb.WriteString("1. ")
+			s.processRichText(sb, block.NumberList.RichText)
+			sb.WriteString("\n")
+		}
+
+	case "to_do":
+		if block.ToDo != nil {
+			sb.WriteString(indent)
+			if block.ToDo.Checked {
+				sb.WriteString("[x] ")
+			} else {
+				sb.WriteString("[ ] ")
+			}
+			s.processRichText(sb, block.ToDo.RichText)
+			sb.WriteString("\n")
+		}
+
+	case "code":
+		if block.Code != nil {
+			sb.WriteString("```")
+			sb.WriteString(block.Code.Language)
+			sb.WriteString("\n")
+			s.processRichText(sb, block.Code.RichText)
+			sb.WriteString("\n```\n\n")
+		}
+
+	case "image":
+		if block.Image != nil {
+			url := s.getFileURL(block.Image)
+			if url != "" {
+				sb.WriteString("![")
+				if len(block.Image.Caption) > 0 {
+					s.processRichText(sb, block.Image.Caption)
+				}
+				sb.WriteString("](")
+				sb.WriteString(url)
+				sb.WriteString(")\n\n")
+			}
+		}
+
+	case "file":
+		if block.File != nil {
+			url := s.getFileURL(block.File)
+			if url != "" {
+				sb.WriteString("[")
+				if len(block.File.Caption) > 0 {
+					s.processRichText(sb, block.File.Caption)
+				} else {
+					sb.WriteString("File")
+				}
+				sb.WriteString("](")
+				sb.WriteString(url)
+				sb.WriteString(")\n\n")
+			}
+		}
+	}
+
+	// Process nested blocks
+	if len(block.Children) > 0 {
+		for _, child := range block.Children {
+			if err := s.processBlock(sb, child, depth+1); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// processRichText formats rich text content
+func (s *NotionService) processRichText(sb *strings.Builder, richText []NotionRichText) {
+	for _, text := range richText {
+		content := text.PlainText
+
+		// Apply text formatting
+		if text.Annotations.Code {
+			sb.WriteString("`")
+			sb.WriteString(content)
+			sb.WriteString("`")
+		} else {
+			if text.Annotations.Bold {
+				sb.WriteString("**")
+			}
+			if text.Annotations.Italic {
+				sb.WriteString("_")
+			}
+			if text.Annotations.Strikethrough {
+				sb.WriteString("~~")
+			}
+			
+			// Add link if present
+			if text.Href != "" {
+				sb.WriteString("[")
+				sb.WriteString(content)
+				sb.WriteString("](")
+				sb.WriteString(text.Href)
+				sb.WriteString(")")
+			} else {
+				sb.WriteString(content)
+			}
+
+			if text.Annotations.Strikethrough {
+				sb.WriteString("~~")
+			}
+			if text.Annotations.Italic {
+				sb.WriteString("_")
+			}
+			if text.Annotations.Bold {
+				sb.WriteString("**")
+			}
+		}
+	}
+}
+
+// getFileURL returns the appropriate URL for a file or image
+func (s *NotionService) getFileURL(file *NotionFile) string {
+	if file == nil {
+		return ""
+	}
+
+	switch file.Type {
+	case "external":
+		if file.External != nil {
+			return file.External.URL
+		}
+	case "file":
+		if file.File != nil {
+			return file.File.URL
+		}
+	}
+	return ""
 }
 
 // NotionDatabase represents a Notion database
@@ -360,9 +560,81 @@ type NotionPage struct {
 
 // NotionBlock represents a block of content in a Notion page
 type NotionBlock struct {
-	Type      string `json:"type"`
-	PlainText string `json:"plain_text,omitempty"`
-	Content   struct {
-		Text string `json:"text,omitempty"`
-	} `json:"content,omitempty"`
+	ID          string                 `json:"id"`
+	Type        string                 `json:"type"`
+	HasChildren bool                   `json:"has_children"`
+	CreatedTime string                 `json:"created_time"`
+	LastEdited  string                 `json:"last_edited_time"`
+	Paragraph   *NotionParagraph       `json:"paragraph,omitempty"`
+	Heading1    *NotionHeading         `json:"heading_1,omitempty"`
+	Heading2    *NotionHeading         `json:"heading_2,omitempty"`
+	Heading3    *NotionHeading         `json:"heading_3,omitempty"`
+	BulletList  *NotionListItem        `json:"bulleted_list_item,omitempty"`
+	NumberList  *NotionListItem        `json:"numbered_list_item,omitempty"`
+	ToDo        *NotionToDo            `json:"to_do,omitempty"`
+	Code        *NotionCode            `json:"code,omitempty"`
+	Image       *NotionFile            `json:"image,omitempty"`
+	File        *NotionFile            `json:"file,omitempty"`
+	Children    []NotionBlock          `json:"children,omitempty"`
+}
+
+// NotionRichText represents rich text content
+type NotionRichText struct {
+	Type        string `json:"type"`
+	PlainText   string `json:"plain_text"`
+	Annotations struct {
+		Bold          bool   `json:"bold"`
+		Italic        bool   `json:"italic"`
+		Strikethrough bool   `json:"strikethrough"`
+		Underline     bool   `json:"underline"`
+		Code          bool   `json:"code"`
+		Color         string `json:"color"`
+	} `json:"annotations"`
+	Href string `json:"href,omitempty"`
+}
+
+// NotionParagraph represents a paragraph block
+type NotionParagraph struct {
+	RichText []NotionRichText `json:"rich_text"`
+	Color    string           `json:"color"`
+}
+
+// NotionHeading represents a heading block
+type NotionHeading struct {
+	RichText []NotionRichText `json:"rich_text"`
+	Color    string           `json:"color"`
+	IsToggleable bool         `json:"is_toggleable"`
+}
+
+// NotionListItem represents a list item block
+type NotionListItem struct {
+	RichText []NotionRichText `json:"rich_text"`
+	Color    string           `json:"color"`
+}
+
+// NotionToDo represents a to-do block
+type NotionToDo struct {
+	RichText []NotionRichText `json:"rich_text"`
+	Checked  bool             `json:"checked"`
+	Color    string           `json:"color"`
+}
+
+// NotionCode represents a code block
+type NotionCode struct {
+	RichText []NotionRichText `json:"rich_text"`
+	Language string           `json:"language"`
+	Caption  []NotionRichText `json:"caption"`
+}
+
+// NotionFile represents a file or image block
+type NotionFile struct {
+	Type     string `json:"type"` // "file" or "external"
+	File     *struct {
+		URL        string `json:"url"`
+		ExpiryTime string `json:"expiry_time"`
+	} `json:"file,omitempty"`
+	External *struct {
+		URL string `json:"url"`
+	} `json:"external,omitempty"`
+	Caption []NotionRichText `json:"caption"`
 } 
