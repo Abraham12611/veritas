@@ -10,32 +10,63 @@ import (
 	"github.com/yourusername/veritas/internal/models"
 )
 
-// LLMClient defines the interface for language model operations
+// Package rag implements Retrieval-Augmented Generation (RAG) functionality for the Veritas platform.
+// It provides services for question answering using vector search and language models,
+// combining document retrieval with AI-powered text generation.
+//
+// The main components are:
+// - RAGService: Orchestrates the QA process using vector search and LLM
+// - LLMClient: Interface for language model operations (implemented by OpenAIClient)
+// - VectorStore: Interface for vector similarity search (implemented by SupabaseVectorStore)
+
+// LLMClient defines the interface for language model operations.
+// Implementations should handle token limits, rate limiting, and error handling.
 type LLMClient interface {
+	// CreateEmbedding generates a vector embedding for the given text.
+	// The embedding can be used for similarity search or other vector operations.
 	CreateEmbedding(ctx context.Context, text string) ([]float32, error)
+
+	// Complete generates text based on the given completion request.
+	// It should handle prompt construction and response parsing.
 	Complete(ctx context.Context, req CompletionRequest) (string, error)
 }
 
-// VectorStore defines the interface for vector search operations
+// VectorStore defines the interface for vector search operations.
+// Implementations should handle efficient similarity search over document embeddings.
 type VectorStore interface {
+	// SearchSimilar finds document chunks similar to the given embedding.
+	// It returns up to 'limit' chunks, ordered by similarity score.
 	SearchSimilar(ctx context.Context, instanceID uuid.UUID, embedding []float32, limit int) ([]models.DocumentChunk, error)
 }
 
-// DB defines the interface for database operations
+// DB defines the interface for database operations related to queries and answers.
+// Implementations should handle CRUD operations for the QA process.
 type DB interface {
+	// CreateQuery stores a new query in the database.
 	CreateQuery(ctx context.Context, query *models.Query) error
+
+	// CreateAnswer stores a new answer in the database.
 	CreateAnswer(ctx context.Context, answer *models.Answer) error
 }
 
-// CompletionRequest represents a request to generate text
+// CompletionRequest represents a request to generate text using a language model.
+// It includes both system and user prompts to guide the model's response.
 type CompletionRequest struct {
+	// SystemPrompt provides context and instructions for the model
 	SystemPrompt string
-	UserPrompt   string
-	Temperature  float32
-	MaxTokens    int
+
+	// UserPrompt contains the actual content to complete
+	UserPrompt string
+
+	// Temperature controls response randomness (0.0-1.0)
+	Temperature float32
+
+	// MaxTokens limits the response length
+	MaxTokens int
 }
 
-// RAGService handles question answering using vector search and LLM
+// RAGService handles question answering using vector search and LLM integration.
+// It coordinates between the vector store for retrieval and the LLM for generation.
 type RAGService struct {
 	db          DB
 	llm         LLMClient
@@ -51,7 +82,14 @@ func NewRAGService(db DB, llm LLMClient, vectorStore VectorStore) *RAGService {
 	}
 }
 
-// AnswerQuestion processes a question and returns an answer with sources
+// AnswerQuestion processes a question and returns an answer with relevant sources.
+// It performs the following steps:
+// 1. Validates and stores the question
+// 2. Generates an embedding for the question
+// 3. Searches for relevant document chunks
+// 4. Builds a prompt with the found context
+// 5. Generates an answer using the LLM
+// 6. Stores and returns the answer with sources
 func (s *RAGService) AnswerQuestion(ctx context.Context, instanceID uuid.UUID, question string) (*models.Answer, error) {
 	// Validate input
 	if question = strings.TrimSpace(question); question == "" {
