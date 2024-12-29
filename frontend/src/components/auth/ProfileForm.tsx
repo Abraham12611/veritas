@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import AvatarUpload from './AvatarUpload'
 
 interface ProfileFormProps {
   profile?: {
@@ -13,9 +14,13 @@ interface ProfileFormProps {
     organization_id: string | null
     role: 'admin' | 'editor' | 'viewer' | null
   }
+  user?: {
+    email: string | undefined
+    email_confirmed_at?: string | null
+  }
 }
 
-export default function ProfileForm({ profile }: ProfileFormProps) {
+export default function ProfileForm({ profile, user }: ProfileFormProps) {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
@@ -30,6 +35,13 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
+    }))
+  }
+
+  const handleAvatarUpload = (url: string) => {
+    setFormData(prev => ({
+      ...prev,
+      avatar_url: url
     }))
   }
 
@@ -61,15 +73,64 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
     }
   }
 
+  const handleResendVerification = async () => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user?.email
+      })
+      if (error) throw error
+      alert('Verification email sent!')
+    } catch (err) {
+      alert('Error sending verification email')
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-8">
       {error && (
         <div className="bg-red-50 dark:bg-red-900/50 p-4 rounded-md">
           <p className="text-sm text-red-500 dark:text-red-200">{error}</p>
         </div>
       )}
+
+      <div className="flex flex-col items-center pb-6 border-b border-gray-700">
+        <AvatarUpload
+          url={formData.avatar_url}
+          onUploadComplete={handleAvatarUpload}
+          size={120}
+        />
+      </div>
       
-      <div className="space-y-4">
+      <div className="space-y-6">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+            Email
+          </label>
+          <div className="mt-1 flex items-center space-x-2">
+            <input
+              type="email"
+              id="email"
+              value={user?.email || ''}
+              disabled
+              className="block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm focus:border-brand-blue focus:ring-brand-blue sm:text-sm px-3 py-2 disabled:opacity-50"
+            />
+            {user?.email_confirmed_at ? (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
+                Verified
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                className="text-sm text-brand-blue hover:text-blue-400"
+              >
+                Resend verification
+              </button>
+            )}
+          </div>
+        </div>
+
         <div>
           <label htmlFor="full_name" className="block text-sm font-medium text-gray-300">
             Full Name
@@ -93,20 +154,6 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
             id="username"
             name="username"
             value={formData.username}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm focus:border-brand-blue focus:ring-brand-blue sm:text-sm px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="avatar_url" className="block text-sm font-medium text-gray-300">
-            Avatar URL
-          </label>
-          <input
-            type="url"
-            id="avatar_url"
-            name="avatar_url"
-            value={formData.avatar_url}
             onChange={handleChange}
             className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm focus:border-brand-blue focus:ring-brand-blue sm:text-sm px-3 py-2"
           />
