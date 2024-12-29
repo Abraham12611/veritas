@@ -22,7 +22,13 @@ export default async function ProfilePage() {
         </div>
 
         <div className="bg-gray-800 rounded-lg p-6">
-          <ProfileForm profile={profile} />
+          <ProfileForm 
+            profile={profile} 
+            user={{
+              email: user?.email,
+              email_confirmed_at: user?.email_confirmed_at
+            }}
+          />
         </div>
 
         <div className="bg-gray-800 rounded-lg p-6">
