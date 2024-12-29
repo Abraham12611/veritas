@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -47,14 +48,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-      <div className="w-full max-w-md space-y-8 rounded-lg border border-border bg-card p-8 shadow-sm">
+      <div className="w-full max-w-md space-y-8 rounded-lg border border-border bg-card p-8 shadow-sm transition-all duration-300 hover:shadow-md">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold">Welcome Back</h1>
           <p className="text-muted-foreground">Enter your credentials to continue</p>
         </div>
 
         {error && (
-          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive animate-in fade-in slide-in-from-top-1">
             {error}
           </div>
         )}
@@ -70,7 +71,8 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-md border border-input bg-background px-3 py-2"
+              disabled={isLoading}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="you@example.com"
             />
           </div>
@@ -85,26 +87,42 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full rounded-md border border-input bg-background px-3 py-2"
+              disabled={isLoading}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="group relative w-full rounded-md bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <LoadingSpinner size="sm" className="mr-2" />
+                Signing in...
+              </span>
+            ) : (
+              'Sign in'
+            )}
           </button>
         </form>
 
         <div className="space-y-2 text-center text-sm">
-          <Link href="/auth/forgot-password" className="text-primary hover:underline">
+          <Link 
+            href="/auth/forgot-password" 
+            className="text-primary transition-colors hover:text-primary/90 hover:underline"
+            tabIndex={isLoading ? -1 : 0}
+          >
             Forgot your password?
           </Link>
           <p className="text-muted-foreground">
             Don't have an account?{' '}
-            <Link href="/auth/signup" className="text-primary hover:underline">
+            <Link 
+              href="/auth/signup" 
+              className="text-primary transition-colors hover:text-primary/90 hover:underline"
+              tabIndex={isLoading ? -1 : 0}
+            >
               Sign up
             </Link>
           </p>
