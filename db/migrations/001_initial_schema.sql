@@ -5,8 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
 
 -- Create profiles table
 CREATE TABLE IF NOT EXISTS profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL,
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL UNIQUE,
     full_name VARCHAR(255),
     avatar_url TEXT,
@@ -18,7 +17,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 -- Create instances table
 CREATE TABLE IF NOT EXISTS instances (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES profiles(user_id),
+    user_id UUID NOT NULL REFERENCES auth.users(id),
     name VARCHAR(255) NOT NULL,
     description TEXT,
     api_key UUID DEFAULT uuid_generate_v4(),
@@ -104,16 +103,14 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 
 -- Create indexes
-CREATE INDEX idx_profiles_user_id ON profiles(user_id);
-CREATE INDEX idx_instances_user_id ON instances(user_id);
-CREATE INDEX idx_data_sources_instance_id ON data_sources(instance_id);
-CREATE INDEX idx_documents_instance_id ON documents(instance_id);
-CREATE INDEX idx_documents_data_source_id ON documents(data_source_id);
-CREATE INDEX idx_chunks_document_id ON chunks(document_id);
-CREATE INDEX idx_queries_instance_id ON queries(instance_id);
-CREATE INDEX idx_queries_user_id ON queries(user_id);
-CREATE INDEX idx_answers_query_id ON answers(query_id);
-CREATE INDEX idx_feedback_answer_id ON feedback(answer_id);
+CREATE INDEX IF NOT EXISTS idx_instances_user_id ON instances(user_id);
+CREATE INDEX IF NOT EXISTS idx_data_sources_instance_id ON data_sources(instance_id);
+CREATE INDEX IF NOT EXISTS idx_documents_data_source_id ON documents(data_source_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id);
+CREATE INDEX IF NOT EXISTS idx_queries_instance_id ON queries(instance_id);
+CREATE INDEX IF NOT EXISTS idx_queries_user_id ON queries(user_id);
+CREATE INDEX IF NOT EXISTS idx_answers_query_id ON answers(query_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_answer_id ON feedback(answer_id);
 
 -- Create vector indexes
 CREATE INDEX idx_documents_embedding ON documents USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
