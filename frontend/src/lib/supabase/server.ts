@@ -8,15 +8,14 @@ export const createServerComponentClient = () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => {
-          return cookies()
-            .getAll()
-            .map(({ name, value }) => ({ name, value }))
+        get(name: string) {
+          return cookies().get(name)?.value
         },
-        setAll: (cookieList) => {
-          cookieList.forEach((cookie) => {
-            cookies().set(cookie.name, cookie.value, cookie.options)
-          })
+        set(name: string, value: string, options: CookieOptions) {
+          cookies().set(name, value, options)
+        },
+        remove(name: string, options: CookieOptions) {
+          cookies().delete(name, options)
         },
       },
     }
