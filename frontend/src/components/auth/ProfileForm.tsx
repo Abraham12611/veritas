@@ -74,10 +74,12 @@ export default function ProfileForm({ profile, user }: ProfileFormProps) {
   }
 
   const handleResendVerification = async () => {
+    if (!user?.email) return
+
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: user?.email
+        email: user.email
       })
       if (error) throw error
       alert('Verification email sent!')
