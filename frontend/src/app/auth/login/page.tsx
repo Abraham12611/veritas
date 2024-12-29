@@ -2,122 +2,113 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/dashboard'
-  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
   const supabase = createClient()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError(null)
+    setIsLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) throw error
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password')
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError('Please verify your email before logging in')
+        } else {
+          setError('An error occurred during login. Please try again.')
+        }
+        return
+      }
 
-      router.push(redirectTo)
+      // Successful login
+      router.push('/dashboard')
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during login')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Sign in to your account
-          </h2>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+      <div className="w-full max-w-md space-y-8 rounded-lg border border-border bg-card p-8 shadow-sm">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold">Welcome Back</h1>
+          <p className="text-muted-foreground">Enter your credentials to continue</p>
         </div>
-        
+
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded relative" role="alert">
-            <span className="block sm:inline">{error}</span>
+          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            {error}
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white placeholder-gray-400 rounded-t-md focus:outline-none focus:ring-brand-blue focus:border-brand-blue focus:z-10 sm:text-sm"
-                placeholder="Email address"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white placeholder-gray-400 rounded-b-md focus:outline-none focus:ring-brand-blue focus:border-brand-blue focus:z-10 sm:text-sm"
-                placeholder="Password"
-              />
-            </div>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full rounded-md border border-input bg-background px-3 py-2"
+              placeholder="you@example.com"
+            />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <Link
-                href="/auth/forgot-password"
-                className="font-medium text-brand-blue hover:text-blue-400"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-            <div className="text-sm">
-              <Link
-                href="/auth/signup"
-                className="font-medium text-brand-blue hover:text-blue-400"
-              >
-                Create an account
-              </Link>
-            </div>
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full rounded-md border border-input bg-background px-3 py-2"
+            />
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-brand-blue hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-blue disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoading ? 'Signing in...' : 'Sign in'}
+          </button>
         </form>
+
+        <div className="space-y-2 text-center text-sm">
+          <Link href="/auth/forgot-password" className="text-primary hover:underline">
+            Forgot your password?
+          </Link>
+          <p className="text-muted-foreground">
+            Don't have an account?{' '}
+            <Link href="/auth/signup" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )
