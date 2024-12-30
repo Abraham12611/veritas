@@ -1,20 +1,31 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { LucideIcon } from 'lucide-react';
+import { Activity, MessageSquare, Database, Clock, Users, Server } from 'lucide-react';
+
+const ICONS = {
+  activity: Activity,
+  message: MessageSquare,
+  database: Database,
+  clock: Clock,
+  users: Users,
+  server: Server,
+} as const;
 
 interface KpiCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon?: LucideIcon;
+  iconType?: keyof typeof ICONS;
   trend?: {
     value: number;
     isPositive: boolean;
   };
 }
 
-export function KpiCard({ title, value, description, icon: Icon, trend }: KpiCardProps) {
+export function KpiCard({ title, value, description, iconType, trend }: KpiCardProps) {
+  const Icon = iconType ? ICONS[iconType] : null;
+
   return (
     <Card>
       <CardContent className="pt-6">
