@@ -1,6 +1,15 @@
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can view instances they own or belong to" ON instances;
+DROP POLICY IF EXISTS "Users can create instances" ON instances;
+DROP POLICY IF EXISTS "Instance owners can update their instances" ON instances;
+DROP POLICY IF EXISTS "Instance owners can delete their instances" ON instances;
+
 -- Create base tables first
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,

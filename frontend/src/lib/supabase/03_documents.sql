@@ -1,3 +1,9 @@
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view documents of their instances" ON documents;
+DROP POLICY IF EXISTS "System can insert documents" ON documents;
+DROP POLICY IF EXISTS "System can update documents" ON documents;
+DROP POLICY IF EXISTS "Instance owners can delete documents" ON documents;
+
 -- Create documents table with vector support
 CREATE TABLE IF NOT EXISTS documents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

@@ -1,3 +1,9 @@
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view queries of their instances" ON queries;
+DROP POLICY IF EXISTS "Users can create queries for their instances" ON queries;
+DROP POLICY IF EXISTS "Users can view answers to their queries" ON answers;
+DROP POLICY IF EXISTS "System can create answers" ON answers;
+
 -- Create queries and answers tables
 CREATE TABLE IF NOT EXISTS queries (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

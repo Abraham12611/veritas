@@ -1,3 +1,11 @@
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view instance members" ON instance_members;
+DROP POLICY IF EXISTS "Instance owners can manage members" ON instance_members;
+DROP POLICY IF EXISTS "Users can view data sources of their instances" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can create data sources" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can update data sources" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can delete data sources" ON data_sources;
+
 -- Create instance members and data sources tables
 CREATE TABLE IF NOT EXISTS instance_members (
   instance_id UUID REFERENCES instances ON DELETE CASCADE,
