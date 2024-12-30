@@ -1,18 +1,19 @@
+'use client';
+
 import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { AnalyticsPreview } from '@/components/dashboard/AnalyticsPreview';
 import { InstancesTable } from '@/components/dashboard/InstancesTable';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
-import { Users, Database, Activity, Server } from 'lucide-react';
 
 async function getInstances() {
-  // TODO: Fetch instances from API
+  // TODO: Implement real data fetching
   return [];
 }
 
 async function getAnalytics() {
-  // TODO: Fetch analytics data from API
+  // TODO: Implement real data fetching
   return {
     totalQueries: 1234,
     activeInstances: 5,
@@ -40,23 +41,23 @@ export default async function DashboardPage() {
         <KpiCard
           title="Total Queries"
           value={analytics.totalQueries}
-          icon={Activity}
+          iconType="activity"
           trend={{ value: analytics.queryTrend, isPositive: true }}
         />
         <KpiCard
           title="Active Instances"
           value={analytics.activeInstances}
-          icon={Server}
+          iconType="server"
         />
         <KpiCard
           title="Data Sources"
           value={analytics.dataSources}
-          icon={Database}
+          iconType="database"
         />
         <KpiCard
           title="Active Users"
           value="250+"
-          icon={Users}
+          iconType="users"
           description="Last 30 days"
         />
       </div>
