@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Globe, MessageSquare, Bot, Code } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { ConfigureDeploymentModal } from './deployment/ConfigureDeploymentModal';
 
 interface Deployment {
