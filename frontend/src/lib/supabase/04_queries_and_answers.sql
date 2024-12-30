@@ -1,10 +1,5 @@
--- Drop existing policies first
-DROP POLICY IF EXISTS "Users can view queries of their instances" ON queries;
-DROP POLICY IF EXISTS "Users can create queries for their instances" ON queries;
-DROP POLICY IF EXISTS "Users can view answers to their queries" ON answers;
-DROP POLICY IF EXISTS "System can create answers" ON answers;
-
--- Create queries and answers tables
+-- Step 1: Create tables
+-----------------
 CREATE TABLE IF NOT EXISTS queries (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   instance_id UUID REFERENCES instances ON DELETE CASCADE NOT NULL,
@@ -21,15 +16,25 @@ CREATE TABLE IF NOT EXISTS answers (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS
-ALTER TABLE queries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
-
--- Create indexes
+-- Step 2: Create indexes
+-----------------
 CREATE INDEX IF NOT EXISTS idx_queries_instance_id ON queries(instance_id);
 CREATE INDEX IF NOT EXISTS idx_answers_query_id ON answers(query_id);
 
--- Create policies for queries
+-- Step 3: Enable RLS
+-----------------
+ALTER TABLE queries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
+
+-- Step 4: Drop existing policies (now safe since tables exist)
+-----------------
+DROP POLICY IF EXISTS "Users can view queries of their instances" ON queries;
+DROP POLICY IF EXISTS "Users can create queries for their instances" ON queries;
+DROP POLICY IF EXISTS "Users can view answers to their queries" ON answers;
+DROP POLICY IF EXISTS "System can create answers" ON answers;
+
+-- Step 5: Create policies for queries
+-----------------
 CREATE POLICY "Users can view queries of their instances"
   ON queries FOR SELECT
   USING (
@@ -64,7 +69,8 @@ CREATE POLICY "Users can create queries for their instances"
     )
   );
 
--- Create policies for answers
+-- Step 6: Create policies for answers
+-----------------
 CREATE POLICY "Users can view answers to their queries"
   ON answers FOR SELECT
   USING (

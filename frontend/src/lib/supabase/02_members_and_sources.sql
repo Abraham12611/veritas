@@ -1,12 +1,5 @@
--- Drop existing policies first
-DROP POLICY IF EXISTS "Users can view instance members" ON instance_members;
-DROP POLICY IF EXISTS "Instance owners can manage members" ON instance_members;
-DROP POLICY IF EXISTS "Users can view data sources of their instances" ON data_sources;
-DROP POLICY IF EXISTS "Instance owners can create data sources" ON data_sources;
-DROP POLICY IF EXISTS "Instance owners can update data sources" ON data_sources;
-DROP POLICY IF EXISTS "Instance owners can delete data sources" ON data_sources;
-
--- Create instance members and data sources tables
+-- Step 1: Create tables
+-----------------
 CREATE TABLE IF NOT EXISTS instance_members (
   instance_id UUID REFERENCES instances ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
@@ -25,16 +18,28 @@ CREATE TABLE IF NOT EXISTS data_sources (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS
-ALTER TABLE instance_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE data_sources ENABLE ROW LEVEL SECURITY;
-
--- Create indexes
+-- Step 2: Create indexes
+-----------------
 CREATE INDEX IF NOT EXISTS idx_instance_members_instance_id ON instance_members(instance_id);
 CREATE INDEX IF NOT EXISTS idx_instance_members_user_id ON instance_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_data_sources_instance_id ON data_sources(instance_id);
 
--- Create policies for instance members
+-- Step 3: Enable RLS
+-----------------
+ALTER TABLE instance_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE data_sources ENABLE ROW LEVEL SECURITY;
+
+-- Step 4: Drop existing policies (now safe since tables exist)
+-----------------
+DROP POLICY IF EXISTS "Users can view instance members" ON instance_members;
+DROP POLICY IF EXISTS "Instance owners can manage members" ON instance_members;
+DROP POLICY IF EXISTS "Users can view data sources of their instances" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can create data sources" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can update data sources" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can delete data sources" ON data_sources;
+
+-- Step 5: Create instance members policies
+-----------------
 CREATE POLICY "Users can view instance members"
   ON instance_members FOR SELECT
   USING (
@@ -62,7 +67,8 @@ CREATE POLICY "Instance owners can manage members"
     )
   );
 
--- Create policies for data sources
+-- Step 6: Create data sources policies
+-----------------
 CREATE POLICY "Users can view data sources of their instances"
   ON data_sources FOR SELECT
   USING (
