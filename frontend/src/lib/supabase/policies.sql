@@ -1,6 +1,8 @@
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgvector";
+
+-- Note: pgvector extension should be enabled via the Supabase dashboard
+-- CREATE EXTENSION IF NOT EXISTS "pgvector"; -- Comment this out as it's handled in dashboard
 
 -- Drop existing policies first
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
@@ -76,7 +78,7 @@ CREATE TABLE IF NOT EXISTS documents (
   data_source_id UUID REFERENCES data_sources ON DELETE CASCADE NOT NULL,
   content TEXT NOT NULL,
   metadata JSONB NOT NULL DEFAULT '{}',
-  embedding vector(1536),
+  embedding vector(1536) NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
