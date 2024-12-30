@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { EmailVerification } from '@/components/auth/EmailVerification';
-import { ProfileForm } from '@/components/auth/ProfileForm';
+import ProfileForm from '@/components/auth/ProfileForm';
 
 export default function ProfilePage() {
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
