@@ -1,3 +1,26 @@
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can view own instances" ON instances;
+DROP POLICY IF EXISTS "Users can create instances" ON instances;
+DROP POLICY IF EXISTS "Users can update own instances" ON instances;
+DROP POLICY IF EXISTS "Users can delete own instances" ON instances;
+DROP POLICY IF EXISTS "Users can view instance members" ON instance_members;
+DROP POLICY IF EXISTS "Instance owners can manage members" ON instance_members;
+DROP POLICY IF EXISTS "Users can view data sources of their instances" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can create data sources" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can update data sources" ON data_sources;
+DROP POLICY IF EXISTS "Instance owners can delete data sources" ON data_sources;
+DROP POLICY IF EXISTS "Users can view documents of their instances" ON documents;
+DROP POLICY IF EXISTS "System can insert documents" ON documents;
+DROP POLICY IF EXISTS "System can update documents" ON documents;
+DROP POLICY IF EXISTS "Instance owners can delete documents" ON documents;
+DROP POLICY IF EXISTS "Users can view queries of their instances" ON queries;
+DROP POLICY IF EXISTS "Users can create queries for their instances" ON queries;
+DROP POLICY IF EXISTS "Users can view answers to their queries" ON answers;
+DROP POLICY IF EXISTS "System can create answers" ON answers;
+
 -- Create necessary tables first
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
