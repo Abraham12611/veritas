@@ -161,11 +161,20 @@ export class SessionManager {
   }
 
   private broadcastSessionUpdate(session: Session | null) {
-    if (this.broadcastChannel) {
-      this.broadcastChannel.postMessage({
-        type: 'SESSION_UPDATED',
-        session,
-      });
+    try {
+      if (this.broadcastChannel) {
+        this.broadcastChannel.postMessage({
+          type: 'SESSION_UPDATED',
+          session,
+        });
+      }
+    } catch (error) {
+      // Silently handle the case where the channel is closed
+      if (error instanceof Error && error.name === 'InvalidStateError') {
+        this.broadcastChannel = null;
+      } else {
+        console.error('Error broadcasting session update:', error);
+      }
     }
   }
 
@@ -199,7 +208,13 @@ export class SessionManager {
     }
     this.clearRefreshTimeout();
     if (this.broadcastChannel) {
-      this.broadcastChannel.close();
+      try {
+        this.broadcastChannel.close();
+      } catch (error) {
+        console.error('Error closing broadcast channel:', error);
+      } finally {
+        this.broadcastChannel = null;
+      }
     }
   }
 } 
