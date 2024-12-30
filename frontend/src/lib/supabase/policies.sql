@@ -21,7 +21,16 @@ DROP POLICY IF EXISTS "Users can create queries for their instances" ON queries;
 DROP POLICY IF EXISTS "Users can view answers to their queries" ON answers;
 DROP POLICY IF EXISTS "System can create answers" ON answers;
 
--- Create necessary tables first
+-- Drop existing tables if they exist (optional, comment out if you want to preserve data)
+DROP TABLE IF EXISTS answers;
+DROP TABLE IF EXISTS queries;
+DROP TABLE IF EXISTS documents;
+DROP TABLE IF EXISTS data_sources;
+DROP TABLE IF EXISTS instance_members;
+DROP TABLE IF EXISTS instances;
+DROP TABLE IF EXISTS profiles;
+
+-- Create tables first
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   email TEXT NOT NULL,
@@ -93,6 +102,15 @@ ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE queries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
 
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_instance_members_instance_id ON instance_members(instance_id);
+CREATE INDEX IF NOT EXISTS idx_instance_members_user_id ON instance_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_data_sources_instance_id ON data_sources(instance_id);
+CREATE INDEX IF NOT EXISTS idx_documents_data_source_id ON documents(data_source_id);
+CREATE INDEX IF NOT EXISTS idx_queries_instance_id ON queries(instance_id);
+CREATE INDEX IF NOT EXISTS idx_answers_query_id ON answers(query_id);
+
+-- Now create all the policies
 -- Profiles table policies
 CREATE POLICY "Users can view their own profile"
   ON profiles FOR SELECT
@@ -300,12 +318,4 @@ CREATE POLICY "Users can view answers to their queries"
 
 CREATE POLICY "System can create answers"
   ON answers FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
-
--- Add indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_instance_members_instance_id ON instance_members(instance_id);
-CREATE INDEX IF NOT EXISTS idx_instance_members_user_id ON instance_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_data_sources_instance_id ON data_sources(instance_id);
-CREATE INDEX IF NOT EXISTS idx_documents_data_source_id ON documents(data_source_id);
-CREATE INDEX IF NOT EXISTS idx_queries_instance_id ON queries(instance_id);
-CREATE INDEX IF NOT EXISTS idx_answers_query_id ON answers(query_id); 
+  WITH CHECK (auth.uid() IS NOT NULL); 
