@@ -16,14 +16,10 @@ export const createClient = () => {
           if (!cookie) return null
           const value = cookie.split('=')[1]
           if (!value) return null
-          try {
-            return decodeURIComponent(value)
-          } catch {
-            return value
-          }
+          return value
         },
         set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean }) {
-          let cookie = `${name}=${encodeURIComponent(value)}`
+          let cookie = `${name}=${value}`
           if (options.path) cookie += `; path=${options.path}`
           if (options.maxAge) cookie += `; max-age=${options.maxAge}`
           if (options.domain) cookie += `; domain=${options.domain}`
