@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
 
 const dataSourceSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -30,10 +31,12 @@ interface AddDataSourceStepProps {
 
 interface ApiError {
   error: string;
+  details?: { message: string }[];
 }
 
 export function AddDataSourceStep({ instanceId, onComplete, onBack }: AddDataSourceStepProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<DataSourceFormValues>({
     resolver: zodResolver(dataSourceSchema),
@@ -53,41 +56,34 @@ export function AddDataSourceStep({ instanceId, onComplete, onBack }: AddDataSou
     try {
       setIsLoading(true);
       
-      // Clean up config based on source type
-      const config = {
-        authToken: values.config.authToken,
-        ...(values.type === 'github' && values.config.repositories 
-          ? { repositories: values.config.repositories }
-          : {}),
-        ...(values.type === 'confluence' && values.config.spaces 
-          ? { spaces: values.config.spaces }
-          : {}),
-        ...(values.type === 'slack' && values.config.channels 
-          ? { channels: values.config.channels }
-          : {}),
-      };
-
       const response = await fetch(`/api/instances/${instanceId}/data-sources`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: values.name,
-          type: values.type,
-          config,
-        }),
+        body: JSON.stringify(values),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = (await response.json()) as ApiError;
-        throw new Error(errorData.error || 'Failed to create data source');
+        const error = data as ApiError;
+        throw new Error(error.details?.[0]?.message || error.error || 'Failed to create data source');
       }
+
+      toast({
+        title: 'Success',
+        description: 'Data source added successfully',
+      });
 
       onComplete();
     } catch (error) {
       console.error('Error creating data source:', error);
-      // TODO: Show error toast
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create data source',
+      });
     } finally {
       setIsLoading(false);
     }
