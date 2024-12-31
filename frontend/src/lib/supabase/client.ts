@@ -1,6 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
-import { createClientComponentClient as createSupabaseClientComponent } from '@supabase/auth-helpers-nextjs'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from './types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const createClient = () => {
   return createBrowserClient<Database>(
@@ -9,28 +10,39 @@ export const createClient = () => {
     {
       cookies: {
         get(name: string) {
-          return document.cookie
+          const cookie = document.cookie
             .split('; ')
             .find((row) => row.startsWith(`${name}=`))
-            ?.split('=')[1]
+          if (!cookie) return null
+          const value = cookie.split('=')[1]
+          if (!value) return null
+          try {
+            return decodeURIComponent(value)
+          } catch {
+            return value
+          }
         },
         set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean }) {
-          document.cookie = `${name}=${value}${options.path ? `; path=${options.path}` : ''}${
-            options.maxAge ? `; max-age=${options.maxAge}` : ''
-          }${options.domain ? `; domain=${options.domain}` : ''}${options.secure ? '; secure' : ''}`
+          let cookie = `${name}=${encodeURIComponent(value)}`
+          if (options.path) cookie += `; path=${options.path}`
+          if (options.maxAge) cookie += `; max-age=${options.maxAge}`
+          if (options.domain) cookie += `; domain=${options.domain}`
+          if (options.secure) cookie += '; secure'
+          document.cookie = cookie
         },
         remove(name: string, options: { path?: string; domain?: string }) {
-          document.cookie = `${name}=; max-age=0${options.path ? `; path=${options.path}` : ''}${
-            options.domain ? `; domain=${options.domain}` : ''
-          }`
+          let cookie = `${name}=; max-age=0`
+          if (options.path) cookie += `; path=${options.path}`
+          if (options.domain) cookie += `; domain=${options.domain}`
+          document.cookie = cookie
         },
       },
     }
   )
 }
 
-export const createClientComponentClient = () => {
-  return createSupabaseClientComponent<Database>()
+export const createSupabaseComponentClient = (): SupabaseClient<Database> => {
+  return createClientComponentClient()
 }
 
 export default createClient 
