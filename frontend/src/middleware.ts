@@ -1,81 +1,38 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req, res })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          const cookie = request.cookies.get(name)
-          return cookie?.value
-        },
-        set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean }) {
-          // This method needs to set the cookie on the response
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: { path?: string; domain?: string }) {
-          // This method needs to delete the cookie on the response
-          response.cookies.delete({
-            name,
-            ...options,
-          })
-        },
-      },
-    }
-  )
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
+  // Auth condition
+  const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
+  const isProtectedPage = req.nextUrl.pathname.startsWith('/(protected)') || 
+                         req.nextUrl.pathname === '/dashboard' ||
+                         req.nextUrl.pathname === '/instances' ||
+                         req.nextUrl.pathname === '/data-sources' ||
+                         req.nextUrl.pathname === '/deployments'
 
-    // Auth routes handling
-    if (request.nextUrl.pathname.startsWith('/auth/')) {
-      if (session) {
-        // If user is signed in and tries to access auth pages, redirect to dashboard
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
-      // Allow access to auth pages for non-authenticated users
-      return response
-    }
-
-    // Protected routes handling
-    if (!session && !request.nextUrl.pathname.startsWith('/auth/')) {
-      // If user is not signed in and tries to access protected pages, redirect to login
-      const redirectUrl = request.nextUrl.pathname
-      return NextResponse.redirect(
-        new URL(`/auth/login?redirect=${redirectUrl}`, request.url)
-      )
-    }
-
-    return response
-  } catch (error) {
-    console.error('Auth error:', error)
-    return NextResponse.redirect(
-      new URL('/auth/login', request.url)
-    )
+  // Redirect if signed in and trying to access auth pages
+  if (session && isAuthPage) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
   }
+
+  // Redirect if not signed in and trying to access protected pages
+  if (!session && isProtectedPage) {
+    return NextResponse.redirect(new URL('/auth/sign-in', req.url))
+  }
+
+  return res
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 } 
