@@ -10,7 +10,13 @@ const instanceSchema = z.object({
 
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { data: instances, error } = await supabase
       .from('instances')
@@ -37,20 +43,22 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const json = await request.json();
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-    // Validate request body
-    const validatedData = instanceSchema.parse(json);
-
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // First check session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+
+    const json = await request.json();
+
+    // Validate request body
+    const validatedData = instanceSchema.parse(json);
 
     // Create instance
     const { data: instance, error } = await supabase
@@ -59,7 +67,7 @@ export async function POST(request: Request) {
         {
           name: validatedData.name,
           is_public: validatedData.environment === 'public',
-          owner_id: user.id,
+          owner_id: session.user.id,
           status: 'active',
           data_sources_count: 0,
           last_synced: new Date().toISOString(),
