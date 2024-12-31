@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const instanceSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -24,7 +24,6 @@ interface CreateInstanceStepProps {
 
 export function CreateInstanceStep({ onComplete }: CreateInstanceStepProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   const form = useForm<InstanceFormValues>({
     resolver: zodResolver(instanceSchema),
@@ -51,19 +50,11 @@ export function CreateInstanceStep({ onComplete }: CreateInstanceStepProps) {
         throw new Error(data.error || 'Failed to create instance');
       }
 
-      toast({
-        title: 'Success',
-        description: 'Instance created successfully',
-      });
-
+      toast.success('Instance created successfully');
       onComplete(data.id);
     } catch (error) {
       console.error('Error creating instance:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create instance',
-        variant: 'destructive',
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to create instance');
     } finally {
       setIsLoading(false);
     }
