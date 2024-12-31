@@ -2,32 +2,47 @@
 
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { useSessionContext } from '@/providers/SessionProvider'
 
 export default function SignInForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
+  const router = useRouter()
+  const { session } = useSessionContext()
+
+  // If already signed in, redirect to dashboard
+  if (session) {
+    router.push('/dashboard')
+    return null
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    setMessage(null)
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) throw error
 
-      // Redirect is handled by middleware
+      // Show success message
+      toast.success('Successfully signed in!')
+
+      // Redirect to dashboard
+      router.push('/dashboard')
+      router.refresh()
     } catch (error: any) {
       setError(error.message)
+      toast.error(error.message)
     } finally {
       setLoading(false)
     }
@@ -50,9 +65,10 @@ export default function SignInForm() {
       })
 
       if (error) throw error
-      setMessage('Check your email for the password reset link')
+      toast.success('Check your email for the password reset link')
     } catch (error: any) {
       setError(error.message)
+      toast.error(error.message)
     } finally {
       setLoading(false)
     }
@@ -64,11 +80,6 @@ export default function SignInForm() {
         {error && (
           <div className="bg-red-500/10 text-red-500 p-4 rounded-md text-sm">
             {error}
-          </div>
-        )}
-        {message && (
-          <div className="bg-green-500/10 text-green-500 p-4 rounded-md text-sm">
-            {message}
           </div>
         )}
 
