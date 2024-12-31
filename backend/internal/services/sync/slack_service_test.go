@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/models"
 )
 
 func TestSlackService_SyncChannels(t *testing.T) {

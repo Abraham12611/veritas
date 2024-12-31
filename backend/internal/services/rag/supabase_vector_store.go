@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/models"
 )
 
 // SupabaseVectorStore implements the VectorStore interface using Supabase's pgvector

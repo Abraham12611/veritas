@@ -1,16 +1,12 @@
-import { createBrowserClient } from '@supabase/ssr'
-import { createClientComponentClient as createSupabaseClientComponent } from '@supabase/auth-helpers-nextjs'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from './types'
 
 export const createClient = () => {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  return createClientComponentClient<Database>()
 }
 
-export const createClientComponentClient = () => {
-  return createSupabaseClientComponent<Database>()
+export const createSupabaseComponentClient = () => {
+  return createClientComponentClient<Database>()
 }
 
 export default createClient 

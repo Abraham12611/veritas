@@ -1,4 +1,4 @@
-module github.com/yourusername/veritas
+module github.com/Abraham12611/veritas
 
 go 1.18
 

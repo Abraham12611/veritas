@@ -3,8 +3,8 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/yourusername/veritas/internal/models"
-	"github.com/yourusername/veritas/internal/services"
+	"github.com/Abraham12611/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/services"
 )
 
 // DataSourceHandler handles data source-related requests

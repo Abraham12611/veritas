@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/models"
 )
 
 // MockLLMClient implements LLMClient for testing

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/models"
 )
 
 // Package rag implements Retrieval-Augmented Generation (RAG) functionality for the Veritas platform.

@@ -8,11 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
 
 const dataSourceSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
-  type: z.enum(['github', 'confluence', 'notion', 'slack']),
-  authToken: z.string().min(1, 'Auth token is required'),
+  type: z.enum(['github', 'confluence', 'notion', 'slack', 'zendesk']),
+  config: z.object({
+    authToken: z.string().min(1, 'Auth token is required'),
+    repositories: z.string().optional(),
+    spaces: z.string().optional(),
+    channels: z.string().optional(),
+  }),
 });
 
 type DataSourceFormValues = z.infer<typeof dataSourceSchema>;
@@ -23,22 +29,33 @@ interface AddDataSourceStepProps {
   onBack: () => void;
 }
 
+interface ApiError {
+  error: string;
+  details?: { message: string }[];
+}
+
 export function AddDataSourceStep({ instanceId, onComplete, onBack }: AddDataSourceStepProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<DataSourceFormValues>({
     resolver: zodResolver(dataSourceSchema),
     defaultValues: {
       name: '',
       type: 'github',
-      authToken: '',
+      config: {
+        authToken: '',
+        repositories: '',
+        spaces: '',
+        channels: '',
+      },
     },
   });
 
   const onSubmit = async (values: DataSourceFormValues) => {
     try {
       setIsLoading(true);
-      // TODO: Call API to create data source
+      
       const response = await fetch(`/api/instances/${instanceId}/data-sources`, {
         method: 'POST',
         headers: {
@@ -47,18 +64,32 @@ export function AddDataSourceStep({ instanceId, onComplete, onBack }: AddDataSou
         body: JSON.stringify(values),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to create data source');
+        const error = data as ApiError;
+        throw new Error(error.details?.[0]?.message || error.error || 'Failed to create data source');
       }
+
+      toast({
+        title: 'Success',
+        description: 'Data source added successfully',
+      });
 
       onComplete();
     } catch (error) {
       console.error('Error creating data source:', error);
-      // TODO: Show error toast
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create data source',
+      });
     } finally {
       setIsLoading(false);
     }
   };
+
+  const sourceType = form.watch('type');
 
   return (
     <div className="space-y-6">
@@ -102,6 +133,7 @@ export function AddDataSourceStep({ instanceId, onComplete, onBack }: AddDataSou
                     <SelectItem value="confluence">Confluence</SelectItem>
                     <SelectItem value="notion">Notion</SelectItem>
                     <SelectItem value="slack">Slack</SelectItem>
+                    <SelectItem value="zendesk">Zendesk</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -111,7 +143,7 @@ export function AddDataSourceStep({ instanceId, onComplete, onBack }: AddDataSou
 
           <FormField
             control={form.control}
-            name="authToken"
+            name="config.authToken"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Authentication Token</FormLabel>
@@ -122,6 +154,54 @@ export function AddDataSourceStep({ instanceId, onComplete, onBack }: AddDataSou
               </FormItem>
             )}
           />
+
+          {sourceType === 'github' && (
+            <FormField
+              control={form.control}
+              name="config.repositories"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Repositories</FormLabel>
+                  <FormControl>
+                    <Input placeholder="owner/repo1, owner/repo2" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {sourceType === 'confluence' && (
+            <FormField
+              control={form.control}
+              name="config.spaces"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Spaces</FormLabel>
+                  <FormControl>
+                    <Input placeholder="space1, space2" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {sourceType === 'slack' && (
+            <FormField
+              control={form.control}
+              name="config.channels"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Channels</FormLabel>
+                  <FormControl>
+                    <Input placeholder="#channel1, #channel2" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <div className="flex justify-between gap-4">
             <Button type="button" variant="outline" onClick={onBack}>

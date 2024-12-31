@@ -1,73 +1,38 @@
-import { createServerClient } from '@supabase/ssr'
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req, res })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: any) {
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
-    }
-  )
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // Auth condition
+  const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
+  const isProtectedPage = req.nextUrl.pathname.startsWith('/(protected)') || 
+                         req.nextUrl.pathname === '/dashboard' ||
+                         req.nextUrl.pathname === '/instances' ||
+                         req.nextUrl.pathname === '/data-sources' ||
+                         req.nextUrl.pathname === '/deployments'
 
-  // Auth routes handling
-  if (request.nextUrl.pathname.startsWith('/auth/')) {
-    if (session) {
-      // If user is signed in and tries to access auth pages, redirect to dashboard
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    // Allow access to auth pages for non-authenticated users
-    return response
+  // Redirect if signed in and trying to access auth pages
+  if (session && isAuthPage) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
-  // Protected routes handling
-  if (!session && !request.nextUrl.pathname.startsWith('/auth/')) {
-    // If user is not signed in and tries to access protected pages, redirect to login
-    const redirectUrl = request.nextUrl.pathname
-    return NextResponse.redirect(
-      new URL(`/auth/login?redirect=${redirectUrl}`, request.url)
-    )
+  // Redirect if not signed in and trying to access protected pages
+  if (!session && isProtectedPage) {
+    return NextResponse.redirect(new URL('/auth/sign-in', req.url))
   }
 
-  return response
+  return res
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 } 

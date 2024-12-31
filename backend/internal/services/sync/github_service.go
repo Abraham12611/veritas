@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v57/github"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/models"
 	"golang.org/x/oauth2"
 	"golang.org/x/time/rate"
 )

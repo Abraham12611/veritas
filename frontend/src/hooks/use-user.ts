@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@/lib/supabase/client'
+import { createSupabaseComponentClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  const supabase = createClientComponentClient()
+  const supabase = createSupabaseComponentClient()
 
   useEffect(() => {
     const getUser = async () => {

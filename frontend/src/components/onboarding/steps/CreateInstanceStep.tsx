@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const instanceSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
@@ -34,7 +36,6 @@ export function CreateInstanceStep({ onComplete }: CreateInstanceStepProps) {
   const onSubmit = async (values: InstanceFormValues) => {
     try {
       setIsLoading(true);
-      // TODO: Call API to create instance
       const response = await fetch('/api/instances', {
         method: 'POST',
         headers: {
@@ -43,15 +44,17 @@ export function CreateInstanceStep({ onComplete }: CreateInstanceStepProps) {
         body: JSON.stringify(values),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to create instance');
+        throw new Error(data.error || 'Failed to create instance');
       }
 
-      const data = await response.json();
+      toast.success('Instance created successfully');
       onComplete(data.id);
     } catch (error) {
       console.error('Error creating instance:', error);
-      // TODO: Show error toast
+      toast.error(error instanceof Error ? error.message : 'Failed to create instance');
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +108,7 @@ export function CreateInstanceStep({ onComplete }: CreateInstanceStepProps) {
           />
 
           <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading ? 'Creating...' : 'Create Instance'}
           </Button>
         </form>
