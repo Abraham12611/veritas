@@ -73,11 +73,11 @@ export async function POST(request: Request) {
       .insert([
         {
           name: validatedData.name,
-          is_public: validatedData.environment === 'public',
-          owner_id: session.user.id,
+          user_id: session.user.id,
           status: 'active',
-          data_sources_count: 0,
-          last_synced: new Date().toISOString(),
+          settings: {
+            is_public: validatedData.environment === 'public',
+          },
         },
       ])
       .select()
