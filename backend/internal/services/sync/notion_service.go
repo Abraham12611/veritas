@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yourusername/veritas/internal/logger"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/logger"
+	"github.com/Abraham12611/veritas/internal/models"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 )

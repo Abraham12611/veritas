@@ -9,10 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/yourusername/veritas/config"
-	"github.com/yourusername/veritas/internal/handlers"
-	"github.com/yourusername/veritas/internal/logger"
-	"github.com/yourusername/veritas/internal/middleware"
+	"github.com/Abraham12611/veritas/config"
+	"github.com/Abraham12611/veritas/internal/handlers"
+	"github.com/Abraham12611/veritas/internal/logger"
+	"github.com/Abraham12611/veritas/internal/middleware"
 )
 
 func main() {

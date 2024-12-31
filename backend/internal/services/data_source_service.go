@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourusername/veritas/config"
-	"github.com/yourusername/veritas/internal/models"
-	"github.com/yourusername/veritas/internal/services/sync"
+	"github.com/Abraham12611/veritas/config"
+	"github.com/Abraham12611/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/services/sync"
 )
 
 // DataSourceService handles business logic for data sources

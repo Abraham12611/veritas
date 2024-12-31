@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/internal/models"
 )
 
 func TestGitHubService_ShouldProcessFile(t *testing.T) {
@@ -75,7 +75,7 @@ func TestGitHubService_SyncRepository(t *testing.T) {
 		InstanceID: uuid.New(),
 		Type:       "github",
 		Config: models.DataSourceConfig{
-			Repository:   "yourusername/veritas",
+			Repository:   "Abraham12611/veritas",
 			AccessToken: "your-github-token",
 		},
 	}

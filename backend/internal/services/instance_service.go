@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourusername/veritas/config"
-	"github.com/yourusername/veritas/internal/models"
+	"github.com/Abraham12611/veritas/config"
+	"github.com/Abraham12611/veritas/internal/models"
 )
 
 // InstanceService handles business logic for instances
