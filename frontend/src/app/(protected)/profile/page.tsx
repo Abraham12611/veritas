@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseComponentClient } from '@/lib/supabase/client';
 import { EmailVerification } from '@/components/auth/EmailVerification';
 import ProfileForm from '@/components/auth/ProfileForm';
 
 export default function ProfilePage() {
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseComponentClient();
 
   useEffect(() => {
     const checkVerification = async () => {
