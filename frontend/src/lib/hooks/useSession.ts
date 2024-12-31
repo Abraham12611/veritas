@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Session } from '@supabase/supabase-js';
 import { SessionManager } from '@/lib/auth/session';
+import { createSupabaseComponentClient } from '@/lib/supabase/client';
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseComponentClient();
 
   useEffect(() => {
     // Initialize session manager
