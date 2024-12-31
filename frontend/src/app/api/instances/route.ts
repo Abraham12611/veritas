@@ -9,10 +9,14 @@ const instanceSchema = z.object({
   environment: z.enum(['public', 'private']),
 })
 
+export const runtime = 'edge'
+
 export async function GET() {
   try {
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient<Database>({ 
+      cookies: () => cookieStore,
+    })
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
@@ -45,7 +49,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient<Database>({ 
+      cookies: () => cookieStore,
+    })
 
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     if (sessionError || !session) {
