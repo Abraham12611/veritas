@@ -74,10 +74,9 @@ export async function POST(request: Request) {
         {
           name: validatedData.name,
           user_id: session.user.id,
+          environment: validatedData.environment,
+          is_public: validatedData.environment === 'public',
           status: 'active',
-          settings: {
-            is_public: validatedData.environment === 'public',
-          },
         },
       ])
       .select()
